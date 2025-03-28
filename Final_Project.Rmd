@@ -1,0 +1,37 @@
+---
+title: "Final Project"
+author: "Vibhav Setlur"
+date: "2025-03-25"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Import Packages
+
+```{r}
+library(tidyverse)
+```
+
+### Load Data
+
+```{r}
+df = read_csv('~/Downloads/UT_Austin/Spring_2025/SDS_326E_Elements_of_Machine_Learning/Final_Project/Data/Protein_Family_Dataset.csv',
+              col_names = ['Entry', 'Entry_Name', 'Protein_Name', 'Genes', 'Length', 'Sequence', 'Location', 'Mass', ])
+       
+```
+
+```{r}
+df %>% 
+  is.na() %>% 
+  colSums()
+```
+
+```{r}
+df %>% 
+  filter(!is.na(Protein))
+```
