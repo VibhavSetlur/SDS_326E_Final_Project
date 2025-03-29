@@ -11,32 +11,6 @@ df %>%
   # Remove extra text in Genome_Location column
   mutate(Genome_Location = str_remove(Genome_Location, 'UP000005640: '))  %>% 
   
-  # Extract information from Features column
-  {
-    # Get all unique features
-    features <- str_split(.$Features, "; ") %>%
-      unlist() %>%
-      str_extract("^[A-Za-z ]+") %>%
-      str_trim() %>%
-      unique()
-    
-    # Define the extract function
-    extract_count <- function(text, feature) {
-      if (is.na(text)) return(0)
-      pattern <- paste0(feature, " \\((\\d+)\\)")
-      match <- str_extract(text, pattern)
-      if (is.na(match)) return(0)
-      as.numeric(str_extract(match, "\\d+"))
-    }
-    
-    # Apply to each feature
-    for (feature in features) {
-      .[[feature]] <- map_dbl(.$Features, ~extract_count(.x, feature))
-    }
-    # Return the modified data frame with new feature columns
-    .  
-  } %>% 
-  
   # Remove unnecessary columns
   select(-Entry, 
          -Protein_Name, 
@@ -50,7 +24,43 @@ df %>%
          -Post_Translational_Modification, 
          -Propeptide, 
          -Signal_Peptide, 
-         -Transit_Peptide) -> df
+         -Transit_Peptide,
+         -Beta_Strand,
+         -Turn,
+         -Helix,
+         -Coiled_Coil,
+         -Compositional_Bias,
+         -Domain_Comments,
+         -Domain_Feature_Table) %>% 
+  
+  # Extract information from Features column
+  {
+    # Get all unique features
+    features = str_split(.$Features, "; ") %>%
+      unlist() %>%
+      str_extract("^[A-Za-z ]+") %>%
+      str_trim() %>%
+      unique()
+    
+    # Define the extract function
+    extract_count = function(text, feature) {
+      if (is.na(text)) return(0)
+      pattern = paste0(feature, " \\((\\d+)\\)")
+      match = str_extract(text, pattern)
+      if (is.na(match)) return(0)
+      as.numeric(str_extract(match, "\\d+"))
+    }
+    
+    # Apply to each feature
+    for (feature in features) {
+      .[[feature]] = map_dbl(.$Features, ~extract_count(.x, feature))
+    }
+    # Return the modified data frame with new feature columns
+    .  
+  } %>% 
+  
+  # Remove the original Features column as it's no longer needed
+  select(-Features) -> df
 
 
 
@@ -85,19 +95,19 @@ df %>%
 
 # Separate Features column into multiple columns
 {
-  feature_names <- .$Features %>%
+  feature_names = .$Features %>%
     str_split("; ") %>%
     unlist() %>%
     str_extract("^[A-Za-z ]+") %>%
     unique() %>%
     str_trim()
   
-  extract_count <- function(text, feature) {
+  extract_count = function(text, feature) {
     if (is.na(text)) {
       return(0)
     }
-    pattern <- paste0(feature, " \\((\\d+)\\)")
-    match <- str_extract(text, pattern)
+    pattern = paste0(feature, " \\((\\d+)\\)")
+    match = str_extract(text, pattern)
     if (is.na(match)) {
       return(0)
     } else {
