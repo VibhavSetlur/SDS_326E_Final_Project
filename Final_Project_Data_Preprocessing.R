@@ -4,17 +4,20 @@ df = read.csv('~/Downloads/UT_Austin/Spring_2025/SDS_326E_Elements_of_Machine_Le
               col.names = c('Entry', 'Entry_Name', 'Protein_Name', 'Genes', 'Length', 'Sequence', 'Genome_Location', 'Mass', 'Features', 'Protein_Location', 'Chain', 'Disulfide_Bond', 'Glycosylation', 'Peptide', 'Residue', 'Lipidation', 'Post_Translational_Modification', 'Propeptide', 'Signal_Peptide', 'Transit_Peptide', 'Beta_Strand', 'Turn', 'Helix', 'Coiled_Coil', 'Compositional_Bias', 'Domain_Comments', 'Domain_Feature_Table', 'Repeat', 'Protein_Family', 'Motif'),
               na.strings = '')
 
+clans = read.csv('~/Downloads/UT_Austin/Spring_2025/SDS_326E_Elements_of_Machine_Learning/Final_Project/SDS_326E_Final_Project/protein_clan_names.csv',
+                 row.names = 1,
+                 col.names = c('UniProt_Name', 'Pfam_Name', 'Distance', 'Similarity', 'Protein_Clan'),
+                 na.strings = '') 
+
 df %>% 
-  # Filter out NA values in Protein_Family (Target Variable)
-  filter(!is.na(Protein_Family)) %>% 
-  
   # Remove extra text in Genome_Location column
   mutate(Genome_Location = str_remove(Genome_Location, 'UP000005640: '))  %>% 
   
   # Remove unnecessary columns
-  select(-Entry, 
-         -Protein_Name, 
-         -Genes, 
+  select(-Entry,
+         -Entry_Name,
+         -Genes,
+         -Protein_Location,
          -Chain, 
          -Disulfide_Bond, 
          -Glycosylation, 
@@ -60,81 +63,20 @@ df %>%
   } %>% 
   
   # Remove the original Features column as it's no longer needed
-  select(-Features) -> df
-
-
-
-
-# ANY OF IDS CAN BE USED ALL ARE UNIQUE
-# see if entry name, entry and protein name are unique
-df %>% 
-  # Check for duplicates in Entry, Entry_Name, and Protein_Name
-  summarise(
-    unique_entry = n_distinct(Entry),
-    unique_entry_name = n_distinct(Entry_Name),
-    unique_protein_name = n_distinct(Protein_Name),
-    total_rows = n()
-  ) %>%
-  mutate(
-    entry_duplicates = total_rows - unique_entry,
-    entry_name_duplicates = total_rows - unique_entry_name,
-    protein_name_duplicates = total_rows - unique_protein_name
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Separate Features column into multiple columns
-{
-  feature_names = .$Features %>%
-    str_split("; ") %>%
-    unlist() %>%
-    str_extract("^[A-Za-z ]+") %>%
-    unique() %>%
-    str_trim()
+  select(-Features) %>% 
   
-  extract_count = function(text, feature) {
-    if (is.na(text)) {
-      return(0)
-    }
-    pattern = paste0(feature, " \\((\\d+)\\)")
-    match = str_extract(text, pattern)
-    if (is.na(match)) {
-      return(0)
-    } else {
-      return(as.numeric(str_extract(match, "\\d+")))
-    }
-  }
+  # Replace Protein_Family with Protein_Clan
+  inner_join(clans, by = c('Protein_Name' = 'UniProt_Name')) %>% 
+  select(-Protein_Family,
+         -Pfam_Name,
+         -Distance,
+         -Similarity) %>% 
+  filter(!is.na(Protein_Clan)) %>% 
   
-  feature_names %>%
-    walk(function(feature) {
-      assign("df", mutate(df, !!sym(feature) := sapply(df$Features, function(x) extract_count(x, feature))), envir = parent.frame())
-    })
-  
-  .
-}
-    pattern = paste0(feature, " \\((\\d+)\\)")
-    match = str_extract(text, pattern)
-    if (is.na(match)) {
-      return(0)
-    } else {
-      return(as.numeric(str_extract(match, "\\d+")))
-    }
-  }
-  
-  feature_names %>%
-    purrr::walk(function(feature) {
-      . <= mutate(., !!sym(feature) := sapply(.$Features, function(x) extract_count(x, feature)))
-    })
-  
-  .
-}
+  # Remove all other NA values if low number of NAs
+  filter(!is.na(Genome_Location)) -> df
+
+# Write the cleaned data frame to a new CSV file
+write.csv(df, '~/Downloads/UT_Austin/Spring_2025/SDS_326E_Elements_of_Machine_Learning/Final_Project/Data/Protein_Family_Dataset_Cleaned.csv')
+
+
